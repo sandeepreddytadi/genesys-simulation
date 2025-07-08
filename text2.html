@@ -1,0 +1,2742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Genesys Cloud Architect - IVR Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            overflow: hidden; /* Prevent body scroll */
+        }
+        
+        /* NEW: Prevent text selection during drag operations */
+        body.unselectable {
+            -webkit-user-select: none; /* Safari */
+            -ms-user-select: none; /* IE 10+ and Edge */
+            user-select: none; /* Standard syntax */
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border-bottom: 3px solid #ff6b35;
+        }
+
+        .header h1 {
+            color: #ff6b35;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .header .subtitle {
+            color: #666;
+            margin-top: 5px;
+            font-size: 14px;
+        }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 80px);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .sidebar, .right-panel {
+            width: 300px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+        }
+
+        .main-content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            overflow-y: auto;
+        }
+
+        .tab-container {
+            display: flex;
+            margin-bottom: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 5px;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #ff6b35;
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .tab:hover:not(.active) {
+            background: rgba(255, 107, 53, 0.1);
+        }
+
+        .section {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .flows-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .flow-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .flow-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255, 255, 255, 0.1), transparent);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .flow-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+        }
+
+        .flow-card:hover::before {
+            opacity: 1;
+        }
+
+        .flow-card h3 {
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+
+        .flow-card .status {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        .toolbox {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .toolbox h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .action-group {
+            margin-bottom: 15px;
+        }
+
+        .action-group h4 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .action-item {
+            display: block;
+            width: 100%;
+            padding: 10px 12px;
+            margin-bottom: 5px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: grab;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            text-align: left;
+        }
+
+        .action-item:hover {
+            border-color: #ff6b35;
+            background: rgba(255, 107, 53, 0.05);
+            transform: translateX(5px);
+        }
+
+        .action-item:active {
+            cursor: grabbing;
+        }
+
+        .settings-form {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #ff6b35;
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
+        }
+
+        .btn {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-right: 10px;
+        }
+
+        .btn:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+
+        .flow-builder {
+            min-height: 400px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            position: relative;
+            border: 2px dashed #dee2e6;
+            overflow: hidden; /* Ensure SVG lines are contained */
+        }
+
+        .flow-node {
+            position: absolute;
+            background: white;
+            border: 2px solid #ff6b35;
+            border-radius: 10px;
+            padding: 15px;
+            cursor: grab; /* Changed to grab for drag-and-drop */
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            min-width: 150px;
+            text-align: center;
+            z-index: 10; /* Ensure nodes are above lines */
+        }
+
+        .flow-node.starting-menu {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-color: #667eea;
+        }
+
+        .flow-node.selected {
+            border-color: #28a745;
+            border-width: 3px;
+        }
+
+        .flow-node h4 {
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .flow-node p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        /* Styles for connection points and lines */
+        .connection-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: #ff6b35;
+            border-radius: 50%;
+            border: 2px solid white;
+            cursor: crosshair;
+            z-index: 11; /* Above node content */
+        }
+
+        .connection-handle.connection-output {
+            bottom: -6px; /* Position at the bottom center */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .connection-handle.connection-input {
+            top: -6px; /* Position at the top center */
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .connection-handle:hover {
+            background: #e55a2b;
+            transform: translateX(-50%) scale(1.2);
+        }
+
+        .connection-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none; /* Allows clicks to pass through to nodes */
+            z-index: 5; /* Lines are behind nodes */
+        }
+
+        .connection-line {
+            stroke: #667eea; /* Color of the connection line */
+            stroke-width: 3;
+            fill: none;
+        }
+
+        .menu-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .menu-table th {
+            background: #ff6b35;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .menu-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .menu-table tr:hover {
+            background: rgba(255, 107, 53, 0.05);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-draft {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .secure-icon {
+            color: #28a745;
+            margin-right: 5px;
+        }
+
+        .actions-reference {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .action-category {
+            margin-bottom: 20px;
+        }
+
+        .action-category h4 {
+            color: #ff6b35;
+            margin-bottom: 10px;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .action-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 10px;
+        }
+
+        .action-description {
+            background: white;
+            padding: 12px;
+            border-radius: 8px;
+            border-left: 4px solid #ff6b35;
+        }
+
+        .action-description strong {
+            color: #333;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .action-description span {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            background: #28a745;
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
+
+        .notification.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Context Menu for Connections */
+        .context-menu {
+            position: absolute;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            display: none;
+            padding: 5px 0;
+            min-width: 100px;
+        }
+
+        .context-menu ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .context-menu ul li {
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .context-menu ul li:hover {
+            background-color: #f0f0f0;
+        }
+
+        .context-menu ul li.danger {
+            color: #dc3545;
+        }
+
+        .context-menu ul li.danger:hover {
+            background-color: #dc3545;
+            color: white;
+        }
+
+        .designer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .designer-header h2 {
+            margin: 0;
+        }
+
+        /* Dial Pad Styles */
+        .dial-pad-container {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            padding: 20px;
+            z-index: 2000;
+            display: none; /* Initially hidden */
+            flex-direction: column;
+            gap: 10px;
+            width: 280px;
+        }
+
+        .dial-pad-container.show {
+            display: flex;
+        }
+
+        .dial-pad-display {
+            width: 100%;
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 10px;
+            font-size: 20px;
+            text-align: right;
+            margin-bottom: 10px;
+            min-height: 40px;
+        }
+
+        .dial-pad-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+
+        .dial-pad-btn {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .dial-pad-btn:hover {
+            background: #e55a2b;
+            transform: translateY(-2px);
+        }
+
+        .dial-pad-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .dial-pad-submit {
+            flex-grow: 1;
+            background: #28a745;
+        }
+        
+        .dial-pad-submit:hover {
+            background: #218838;
+        }
+
+        .dial-pad-clear {
+            background: #6c757d;
+        }
+        
+        .dial-pad-clear:hover {
+            background: #5a6268;
+        }
+
+        /* Modal for Supported Languages */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 3000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%; /* Full width */
+            height: 100%; /* Full height */
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%; /* Adjust as needed */
+            max-width: 600px; /* Max width */
+            position: relative;
+        }
+
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            position: absolute;
+            top: 10px;
+            right: 20px;
+        }
+
+        .close-button:hover,
+        .close-button:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .language-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .language-item:last-child {
+            border-bottom: none;
+        }
+
+        .language-item span {
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .language-item .voice-options select {
+            padding: 5px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .add-language-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .add-language-btn:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .condition-branch-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            background: #f0f2f5;
+            padding: 8px;
+            border-radius: 8px;
+        }
+
+        .condition-branch-item input, .condition-branch-item select {
+            flex: 1;
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        .condition-branch-item button {
+            background: none;
+            border: none;
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .condition-branch-item button:hover {
+            color: #c82333;
+        }
+
+        .add-branch-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s ease;
+        }
+
+        .add-branch-btn:hover {
+            background: #0056b3;
+        }
+
+        .align-button-group {
+            display: flex;
+            gap: 10px;
+        }
+
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🌊 Genesys Cloud Architect</h1>
+        <div class="subtitle">Inbound Call Flow Designer</div>
+    </div>
+
+    <div class="container">
+        <div class="sidebar">
+            <div class="tab-container">
+                <button class="tab active" onclick="switchTab('flows')">Flows</button>
+                <button class="tab" onclick="switchTab('toolbox')">Toolbox</button>
+            </div>
+
+            <div id="flows-section" class="section active">
+                <h3>Flow Management</h3>
+                <button class="btn" onclick="createNewFlow()">📄 New Flow</button>
+                <button class="btn btn-secondary" onclick="openFlow()">📁 Open Flow</button>
+            </div>
+
+            <div id="toolbox-section" class="section">
+                <div class="toolbox">
+                    <h3>Toolbox Actions</h3>
+                    
+                    <div class="action-group">
+                        <h4>Dial Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="dial-by-extension">
+                            🔢 Dial By Extension
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Menu Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="menu">
+                            📋 Menu
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="jump-menu">
+                            ↗️ Jump to Menu
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="previous-menu">
+                            ↩️ Previous Menu
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="repeat-menu">
+                            🔁 Repeat Menu
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Task Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="task">
+                            📝 Task
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="jump-reusable-task">
+                            🔀 Jump to Reusable Task
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Transfer Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="transfer-acd">
+                            📞 Transfer to ACD
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="transfer-user">
+                            👤 Transfer to User
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="transfer-number">
+                            📱 Transfer to Number
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="transfer-group">
+                            👥 Transfer to Group
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="transfer-flow">
+                            ➡️ Transfer to Flow
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="transfer-secure-flow">
+                            🔐 Transfer to Secure Flow
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="transfer-voicemail">
+                            📧 Transfer to Voicemail
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Disconnect Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="disconnect">
+                            ❌ Disconnect
+                        </button>
+                    </div>
+                    
+                    <div class="action-group">
+                        <h4>Play Audio Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="play-audio">
+                            🔊 Play Audio
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="set-whisper-audio">
+                            🔇 Set Whisper Audio
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Data Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="call-data-action">
+                            📡 Call Data Action
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="call-bridge-action">
+                            🌉 Call Bridge Action
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="call-lex-bot">
+                            🤖 Call Lex Bot
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="collect-input">
+                            ⌨️ Collect Input
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="data-table-lookup">
+                            🔍 Data Table Lookup
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="get-participant-data">
+                            🧑‍🤝‍🧑 Get Participant Data
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="set-participant-data">
+                            ✍️ Set Participant Data
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="set-uui-data">
+                            ℹ️ Set UUI Data
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="update-data">
+                            🔄 Update Data
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Find Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="find-queue">
+                            🔎 Find Queue
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="find-system-prompt">
+                            🗣️ Find System Prompt
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="find-user-prompt">
+                            🎙️ Find User Prompt
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="find-user-by-id">
+                            🆔 Find User by ID
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="find-users-by-id">
+                            🔢 Find Users by ID
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Flow Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="create-callback">
+                            ↩️ Create Callback
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="enable-participant-recording">
+                            ⏺️ Enable Participant Recording
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="initialize-flow-outcome">
+                            🏁 Initialize Flow Outcome
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="set-flow-outcome">
+                            🎯 Set Flow Outcome
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="set-language">
+                            🌐 Set Language
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="set-screen-pop">
+                            🖥️ Set Screen Pop
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="set-wrapup-code">
+                            🏷️ Set Wrapup Code
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Logical Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="condition">
+                            ❓ Condition/Decision
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="evaluate-schedule">
+                            🗓️ Evaluate Schedule
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="evaluate-schedule-group">
+                            📅 Evaluate Schedule Group
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="switch">
+                            🔀 Switch
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Loop Actions</h4>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="loop">
+                            🔃 Loop
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="next-loop">
+                            ➡️ Next Loop
+                        </button>
+                        <button class="action-item" draggable="true" ondragstart="drag(event)" data-action="exit-loop">
+                            🛑 Exit Loop
+                        </button>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Settings</h4>
+                        <button class="action-item" onclick="openLanguagesModal()">
+                            🗣️ Supported Languages
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="tab-container">
+                <button class="tab active" onclick="switchMainTab('designer')">Flow Designer</button>
+                <button class="tab" onclick="switchMainTab('flows-list')">Flow List</button>
+                <button class="tab" onclick="switchMainTab('actions')">Actions Reference</button>
+            </div>
+
+            <div id="designer-section" class="section active">
+                <div class="designer-header">
+                    <h2>Flow Designer</h2>
+                    <div class="align-button-group">
+                        <button class="btn" onclick="testFlow()">🧪 Test Flow</button>
+                        <button class="btn btn-secondary" onclick="tidyLayout()">✨ Tidy Up Layout</button>
+                    </div>
+                </div>
+                <div class="flow-builder" id="flowBuilder" ondrop="drop(event)" ondragover="allowDrop(event)">
+                    <!-- ADD data-action="starting-menu" to this div -->
+                    <div class="flow-node starting-menu" style="top: 50px; left: 50px;" id="startingMenu" data-action="starting-menu">
+                        <h4>📱 Starting Menu</h4>
+                        <p>Main Menu Entry Point</p>
+                        <div class="connection-handle connection-output" onmousedown="startConnecting(event, 'startingMenu')"></div>
+                    </div>
+                    <svg id="flowConnections" class="connection-svg"></svg>
+                </div>
+            </div>
+
+            <div id="flows-list-section" class="section">
+                <h2>Inbound Call Flows</h2>
+                <div class="flows-grid">
+                    <div class="flow-card" onclick="selectFlow('main')">
+                        <h3>🏠 Main Menu Flow</h3>
+                        <p>Primary inbound call routing</p>
+                        <div class="status status-published">Published v4.0</div>
+                    </div>
+                    <div class="flow-card" onclick="selectFlow('support')">
+                        <h3>🛠️ Support Flow</h3>
+                        <p>Technical support routing</p>
+                        <div class="status status-draft">Draft v1.0</div>
+                    </div>
+                    <div class="flow-card" onclick="selectFlow('sales')">
+                        <h3>💼 Sales Flow</h3>
+                        <p>Sales inquiry routing</p>
+                        <div class="status status-published">Published v2.1</div>
+                    </div>
+                </div>
+
+                <table class="menu-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th>Version</th>
+                            <th>Division</th>
+                            <th>Last Modified</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><span class="secure-icon">🔒</span>Main Menu Flow</td>
+                            <td><span class="status-badge status-published">Published</span></td>
+                            <td>4.0</td>
+                            <td>Home</td>
+                            <td>2025-06-05</td>
+                        </tr>
+                        <tr>
+                            <td>Support Menu</td>
+                            <td><span class="status-badge status-draft">Draft</span></td>
+                            <td>1.0</td>
+                            <td>Support</td>
+                            <td>2025-06-04</td>
+                        </tr>
+                        <tr>
+                            <td><span class="secure-icon">🔒</span>Sales Routing</td>
+                            <td><span class="status-badge status-published">Published</span></td>
+                            <td>2.1</td>
+                            <td>Sales</td>
+                            <td>2025-06-03</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="actions-section" class="section">
+                <h2>Available Actions Reference</h2>
+                <div class="actions-reference">
+                    <div class="action-category">
+                        <h4>🔢 Dial Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Dial By Extension</strong>
+                                <span>Set up functionality that allows the caller to dial and transfer to a specific extension.</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="action-category">
+                        <h4>📋 Menu Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Menu</strong>
+                                <span>Create a sub-menu in the starting or main menu.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Jump to Menu</strong>
+                                <span>Transfer callers immediately to a designated menu.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Previous Menu</strong>
+                                <span>Allow callers to return to the previous menu.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Repeat Menu</strong>
+                                <span>Give callers the option to hear the current menu again.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>📝 Task Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Task</strong>
+                                <span>Group related steps of a process together, to create a call flow routine.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Jump to Reusable Task</strong>
+                                <span>Insert a complete task previously configured in the Reusable Tasks area.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>📞 Transfer Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Transfer to ACD</strong>
+                                <span>Transfer a caller into a queuing system.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Transfer to User</strong>
+                                <span>Transfer a caller directly to a Genesys Cloud user.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Transfer to Number</strong>
+                                <span>Transfer a caller to an external number.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Transfer to Group</strong>
+                                <span>Transfer a caller directly to a Genesys Cloud group.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Transfer to Flow</strong>
+                                <span>Transfer a caller to another call flow.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Transfer to Secure Flow</strong>
+                                <span>Transfer a caller to a secure call flow.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Transfer to Voicemail</strong>
+                                <span>Transfer to a Genesys Cloud user's voicemail.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>❌ Disconnect Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Disconnect</strong>
+                                <span>Provide callers with a graceful way to exit a menu system by disconnects the call immediately.</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="action-category">
+                        <h4>🔊 Play Audio Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Play Audio</strong>
+                                <span>Add a prompt for the caller.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Set Whisper Audio</strong>
+                                <span>Let the agent know which queue the caller selected.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>📝 Data Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Call Data Action</strong>
+                                <span>Retrieve information about a customer from default or custom data actions integration in Genesys Cloud.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Call BridgeAction</strong>
+                                <span>Retrieve a specific attribute about a contact from a Bridge Server database.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Call Lex Bot</strong>
+                                <span>Run self-service applications within a flow before or instead of routing a customer to an agent.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Collect Input</strong>
+                                <span>Prompt a caller to enter a string of digits.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Data Table Lookup</strong>
+                                <span>Retrieve data stored in a Genesys Cloud data table.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Get Participant Data</strong>
+                                <span>Set up an attribute to retrieve from a call participant.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Set Participant Data</strong>
+                                <span>Set an attribute value on a call participant.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Set UUI Data</strong>
+                                <span>Pass UUI data in transfer and disconnect actions.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Update Data</strong>
+                                <span>Assign values to flow or task level variables.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>🔎 Find Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Find Queue</strong>
+                                <span>Find a queue based on its string name at IVR runtime.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Find System Prompt</strong>
+                                <span>Look up Architect system prompts by name and determine which prompts to play dynamically at runtime.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Find User Prompt</strong>
+                                <span>Look up Architect user prompts by name and determine which prompts to play dynamically at runtime.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Find User by ID</strong>
+                                <span>Reference a user dynamically and find that user based on a string name at IVR runtime.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Find Users by ID</strong>
+                                <span>Reference Genesys Cloud users dynamically and find them based on a string at IVR runtime.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>➡️ Flow Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Create Callback</strong>
+                                <span>Provide an option for an agent to call the customer back to reduce the in-queue wait time or provide the customer with information later.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Enable Participant Recording</strong>
+                                <span>Use this action to provide callers the option of allowing Genesys Cloud to record the inbound call.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Initialize Flow Outcome</strong>
+                                <span>Select a flow outcome that Architect begins to track in the flow.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Set Flow Outcome</strong>
+                                <span>Define a potential outcome that the system tracks as success or failure when an interaction reaches a certain point in the flow.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Set Language</strong>
+                                <span>Allow callers to select the desired language in which to hear prompts.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Set Screen Pop</strong>
+                                <span>Select a predefined script and, if necessary, configure the input variables that store the selection made by the user at runtime.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Set Wrapup Code</strong>
+                                <span>Allow agents to select the desired wrap-up code in which to assign to the call.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>💡 Logical Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Condition/Decision</strong>
+                                <span>Route callers based on conditions (e.g., DTMF input, variable values).</span>
+                            </div>
+                             <div class="action-description">
+                                <strong>Evaluate Schedule</strong>
+                                <span>Make routing decisions based on previously defined schedules.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Evaluate Schedule Group</strong>
+                                <span>Make routing decisions based on previously defined schedule groups.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Switch</strong>
+                                <span>Similar to Decision, for multiple case evaluations.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-category">
+                        <h4>🔄 Loop Actions</h4>
+                        <div class="action-list">
+                            <div class="action-description">
+                                <strong>Loop</strong>
+                                <span>Direct the process branch to repeat a series of actions.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Next Loop</strong>
+                                <span>Continue to the next iteration of a loop.</span>
+                            </div>
+                            <div class="action-description">
+                                <strong>Exit Loop</strong>
+                                <span>End the current loop iteration and continue flow execution.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="action-group">
+                        <h4>Settings</h4>
+                        <button class="action-item" onclick="openLanguagesModal()">
+                            🗣️ Supported Languages
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="right-panel">
+            <div class="settings-form">
+                <h4>Selected Node Settings</h4>
+                <div id="nodeSettings">
+                    <p>Select a node to configure its settings</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="notification" class="notification"></div>
+
+    <div id="connectionContextMenu" class="context-menu">
+        <ul>
+            <li class="danger" onclick="disconnectSelectedLine()">Disconnect</li>
+        </ul>
+    </div>
+    
+    <div id="dialPad" class="dial-pad-container">
+        <div id="dialPadDisplay" class="dial-pad-display"></div>
+        <div class="dial-pad-grid">
+            <button class="dial-pad-btn" onclick="dialPadInput('1')">1</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('2')">2</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('3')">3</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('4')">4</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('5')">5</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('6')">6</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('7')">7</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('8')">8</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('9')">9</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('*')">*</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('0')">0</button>
+            <button class="dial-pad-btn" onclick="dialPadInput('#')">#</button>
+        </div>
+        <div class="dial-pad-actions">
+            <button class="dial-pad-btn dial-pad-clear" onclick="clearDialPad()">Clear</button>
+            <button class="dial-pad-btn dial-pad-submit" onclick="submitDialPadInput()">Submit</button>
+        </div>
+    </div>
+
+    <!-- The Modal -->
+    <div id="languagesModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeLanguagesModal()">&times;</span>
+            <h2>Supported Languages</h2>
+            <div id="languageList">
+                <!-- Language items will be added here dynamically -->
+            </div>
+            <button class="add-language-btn" onclick="addLanguage()">+ Add Language</button>
+        </div>
+    </div>
+
+
+    <script>
+        // Global variables
+        let currentFlow = 'main';
+        let nodeCounter = 1;
+        let selectedNode = null;
+        let connectingNode = null; // Stores the ID of the node currently initiating a connection
+        let activeConnectionLine = null; // Stores the SVG line element that was right-clicked
+        let flowData = {
+            main: { name: 'Main Menu', nodes: [], connections: [] },
+            support: { name: 'Support Flow', nodes: [], connections: [] },
+            sales: { name: 'Sales Flow', nodes: [], connections: [] }
+        };
+
+        let supportedLanguages = [
+            { name: 'English', code: 'en-US', voice: 'default', default: true },
+            { name: 'Telugu', code: 'te-IN', voice: 'default', default: false }
+        ];
+
+        // Drag and drop functions
+        function drag(ev) {
+            ev.dataTransfer.setData("text/plain", ev.target.dataset.action);
+        }
+
+        function allowDrop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.style.backgroundColor = 'rgba(255, 107, 53, 0.1)';
+        }
+
+        function drop(ev) {
+            ev.preventDefault();
+            ev.currentTarget.style.backgroundColor = '';
+            const action = ev.dataTransfer.getData("text/plain");
+            if (!action) return;
+            const builderRect = ev.currentTarget.getBoundingClientRect();
+            const x = ev.clientX - builderRect.left - 75; // Offset for node center
+            const y = ev.clientY - builderRect.top - 25;  // Offset for node center
+            const adjustedX = Math.max(0, Math.min(x, builderRect.width - 150));
+            const adjustedY = Math.max(0, Math.min(y, builderRect.height - 80));
+            createNode(action, adjustedX, adjustedY);
+            ev.dataTransfer.clearData();
+        }
+
+        // Tab switching functions
+        function switchTab(tab) {
+            document.querySelectorAll('.sidebar .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.sidebar .section').forEach(s => s.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab + '-section').classList.add('active');
+        }
+
+        function switchMainTab(tab) {
+            document.querySelectorAll('.main-content .tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.main-content .section').forEach(s => s.classList.remove('active'));
+            event.target.classList.add('active');
+            document.getElementById(tab + '-section').classList.add('active');
+        }
+
+        // Flow management functions
+        function createNewFlow() {
+            const flowName = prompt('Enter new flow name:');
+            if (flowName) {
+                const flowId = flowName.toLowerCase().replace(/\s+/g, '-');
+                flowData[flowId] = { name: flowName, nodes: [], connections: [] };
+                showNotification(`New flow "${flowName}" created successfully!`);
+            }
+        }
+
+        function openFlow() {
+            const flowList = Object.keys(flowData).map(id => `${id}: ${flowData[id].name}`).join('\n');
+            const selectedFlow = prompt(`Available flows:\n${flowList}\n\nEnter flow ID to open:`);
+            if (selectedFlow && flowData[selectedFlow]) {
+                selectFlow(selectedFlow);
+            }
+        }
+
+        function selectFlow(flowId) {
+            if (flowData[flowId]) {
+                currentFlow = flowId;
+                loadFlowData(flowId);
+                switchMainTab('designer');
+                showNotification(`Switched to flow: ${flowData[flowId].name}`);
+            }
+        }
+
+        function loadFlowData(flowId) {
+            const builder = document.getElementById('flowBuilder');
+            // Remove all nodes except the static startingMenu
+            builder.querySelectorAll('.flow-node:not(.starting-menu)').forEach(node => node.remove());
+            document.getElementById('flowConnections').innerHTML = '';
+
+            // Render existing nodes from flowData, excluding startingMenu if it's already there statically
+            const nodesToRender = flowData[flowId].nodes.filter(node => node.id !== 'startingMenu');
+            nodesToRender.forEach(createNodeFromData);
+            
+            // Ensure the startingMenu node is re-selected if it's the current flow's starting point
+            // This is handled by the general click listener added on DOMContentLoaded
+            redrawAllConnections();
+        }
+
+        function setupNode(node, action, id) {
+             const actionIcons = {
+                'dial-by-extension': '🔢',
+                'menu': '📋', 'jump-menu': '↗️', 'previous-menu': '↩️', 'repeat-menu': '🔁',
+                'task': '📝', 'jump-reusable-task': '🔀',
+                'transfer-acd': '📞', 'transfer-user': '👤', 'transfer-number': '📱', 'transfer-group': '�',
+                'transfer-flow': '➡️', 'transfer-secure-flow': '🔐', 'transfer-voicemail': '📧',
+                'disconnect': '❌',
+                'play-audio': '🔊', 'set-whisper-audio': '🔇', 
+                'call-data-action': '📡', 'call-bridge-action': '🌉', 'call-lex-bot': '🤖', 'collect-input': '⌨️',
+                'data-table-lookup': '🔍', 'get-participant-data': '🧑‍🤝‍🧑', 'set-participant-data': '✍️',
+                'set-uui-data': 'ℹ️', 'update-data': '🔄',
+                'find-queue': '🔎', 'find-system-prompt': '🗣️', 'find-user-prompt': '🎙️',
+                'find-user-by-id': '🆔', 'find-users-by-id': '🔢',
+                'create-callback': '↩️', 'enable-participant-recording': '⏺️', 'initialize-flow-outcome': '�',
+                'set-flow-outcome': '🎯', 'set-language': '🌐', 'set-screen-pop': '🖥️', 'set-wrapup-code': '🏷️',
+                'condition': '❓', 'evaluate-schedule': '🗓️', 'evaluate-schedule-group': '📅', 'switch': '🔀',
+                'loop': '🔃', 'next-loop': '➡️', 'exit-loop': '🛑',
+                'starting-menu': '📱' // Added icon for starting menu
+            };
+            const actionNames = {
+                'dial-by-extension': 'Dial By Extension',
+                'menu': 'Menu', 'jump-menu': 'Jump to Menu', 'previous-menu': 'Previous Menu', 'repeat-menu': 'Repeat Menu',
+                'play-audio': 'Play Audio',
+                'task': 'Task', 'jump-reusable-task': 'Jump to Reusable Task', 'set-whisper-audio': 'Set Whisper Audio',
+                'call-data-action': 'Call Data Action', 'call-bridge-action': 'Call Bridge Action', 'call-lex-bot': 'Call Lex Bot', 'collect-input': 'Collect Input',
+                'data-table-lookup': 'Data Table Lookup', 'get-participant-data': 'Get Participant Data', 'set-participant-data': 'Set Participant Data',
+                'set-uui-data': 'Set UUI Data', 'update-data': 'Update Data',
+                'transfer-acd': 'Transfer to ACD', 'transfer-user': 'Transfer to User', 'transfer-number': 'Transfer to Number', 'transfer-group': 'Transfer to Group',
+                'transfer-flow': 'Transfer to Flow', 'transfer-secure-flow': 'Transfer to Secure Flow', 'transfer-voicemail': 'Transfer to Voicemail',
+                'find-queue': 'Find Queue', 'find-system-prompt': 'Find System Prompt', 'find-user-prompt': 'Find User Prompt',
+                'find-user-by-id': 'Find User by ID', 'find-users-by-id': 'Find Users by ID',
+                'create-callback': 'Create Callback', 'enable-participant-recording': 'Enable Participant Recording', 'initialize-flow-outcome': 'Initialize Flow Outcome',
+                'set-flow-outcome': 'Set Flow Outcome', 'set-language': 'Set Language', 'set-screen-pop': 'Set Screen Pop', 'set-wrapup-code': 'Set Wrapup Code',
+                'condition': 'Condition/Decision', 'evaluate-schedule': 'Evaluate Schedule', 'evaluate-schedule-group': 'Evaluate Schedule Group', 'switch': 'Switch',
+                'loop': 'Loop', 'next-loop': 'Next Loop', 'exit-loop': 'Exit Loop',
+                'disconnect': 'Disconnect',
+                'starting-menu': 'Starting Menu' // Added name for starting menu
+            };
+
+            let nodeHTML = `
+                <h4>${actionIcons[action] || '⚙️'} ${actionNames[action] || action}</h4>
+                <p>Configure settings</p>
+                <div class="connection-handle connection-input"></div>
+            `;
+            // Disconnect node and Exit Loop don't need an output handle for a typical flow structure
+            // Also, starting-menu is the entry point, so it only has an output handle.
+            if (action !== 'disconnect' && action !== 'exit-loop' && action !== 'starting-menu') {
+                nodeHTML += `<div class="connection-handle connection-output" onmousedown="startConnecting(event, '${id}')"></div>`;
+            } else if (action === 'starting-menu') {
+                nodeHTML += `<div class="connection-handle connection-output" onmousedown="startConnecting(event, '${id}')"></div>`;
+            }
+            node.innerHTML = nodeHTML;
+
+            node.addEventListener('mousedown', startDrag);
+            node.addEventListener('click', e => {
+                if (!e.target.classList.contains('connection-handle')) {
+                    selectNode(node, action);
+                }
+            });
+            node.addEventListener('mouseup', e => {
+                if (connectingNode) {
+                    endConnecting(e, node.id);
+                }
+            });
+        }
+
+        function createNodeFromData(nodeData) {
+            const node = document.createElement('div');
+            node.className = 'flow-node';
+            node.id = nodeData.id;
+            node.style.left = `${nodeData.x}px`;
+            node.style.top = `${nodeData.y}px`;
+            node.dataset.action = nodeData.action;
+            setupNode(node, nodeData.action, nodeData.id);
+            node.querySelector('p').textContent = nodeData.description || 'Configure settings';
+            document.getElementById('flowBuilder').appendChild(node);
+        }
+
+        function createNode(action, x, y) {
+            const nodeId = `node-${nodeCounter++}`;
+            const node = document.createElement('div');
+            node.className = 'flow-node';
+            node.id = nodeId;
+            node.style.left = `${x}px`;
+            node.style.top = `${y}px`;
+            node.dataset.action = action;
+            
+            setupNode(node, action, nodeId);
+            document.getElementById('flowBuilder').appendChild(node);
+            
+            const nodeData = { id: nodeId, action, x, y, description: 'Configure settings', settings: {} };
+            // Initialize settings for complex nodes
+            if (action === 'condition' || action === 'switch') {
+                nodeData.settings = {
+                    variableToCheck: 'dtmfInput',
+                    branches: [{ value: '', targetNodeId: '' }] // Default empty branch
+                };
+            } else if (action === 'collect-input') {
+                nodeData.settings = {
+                    prompt: 'Please enter your digits.',
+                    digitCount: 1,
+                    timeout: 5
+                };
+            } else if (action === 'set-language') {
+                nodeData.settings = {
+                    languageCode: 'en-US'
+                };
+            } else if (action === 'set-whisper-audio') {
+                nodeData.settings = {
+                    audioContent: 'Call from support queue.'
+                };
+            }
+            
+            flowData[currentFlow].nodes.push(nodeData);
+            showNotification(`${node.querySelector('h4').textContent.trim()} node added!`);
+        }
+
+        // Node selection and configuration
+        function selectNode(node, action) {
+            document.querySelectorAll('.flow-node.selected').forEach(n => n.classList.remove('selected'));
+            node.classList.add('selected');
+            selectedNode = node;
+            updateNodeSettingsUI(action, node);
+        }
+
+        function updateNodeSettingsUI(action, node) {
+            const settingsDiv = document.getElementById('nodeSettings');
+            let settingsHTML = `<h4>Configure ${action.replace(/-/g, ' ').toUpperCase()}</h4>`;
+            const nodeData = flowData[currentFlow].nodes.find(n => n.id === node.id) || {};
+            const settings = nodeData.settings || {};
+
+            // Get all node IDs for dropdowns, excluding the current node
+            const allNodesForDropdown = flowData[currentFlow].nodes
+                .filter(n => n.id !== node.id) // Exclude current node
+                .map(n => {
+                    let displayName = n.action.replace(/-/g, ' ');
+                    if (n.id === 'startingMenu') { // Using id for the static starting menu
+                        displayName = 'Starting Menu';
+                    } else if (n.description && n.description !== 'Configure settings') {
+                        displayName = n.description; // Use saved description if available
+                    }
+                    return { id: n.id, displayName: `${displayName} (${n.id})` };
+                });
+
+
+            switch(action) {
+                case 'starting-menu': // Case for the Starting Menu node
+                    settingsHTML += `
+                        <div class="form-group"><label>Flow Name</label><input type="text" id="flowName" value="${settings.flowName || ''}" placeholder="e.g., Main IVR Flow"></div>
+                        <div class="form-group"><label>Initial Greeting</label><textarea id="initialGreeting" rows="3" placeholder="e.g., Welcome to our service.">${settings.initialGreeting || ''}</textarea></div>
+                        <div class="form-group"><label>Menu Timeout (seconds)</label><input type="number" id="menuTimeout" value="${settings.menuTimeout || 10}" placeholder="e.g., 10"></div>
+                        <div class="form-group">
+                            <label>Speech Recognition</label>
+                            <select id="speechRecognition">
+                                <option value="enabled" ${settings.speechRecognition === 'enabled' ? 'selected' : ''}>Enabled</option>
+                                <option value="disabled" ${settings.speechRecognition === 'disabled' ? 'selected' : ''}>Disabled</option>
+                            </select>
+                        </div>
+                    `;
+                    break;
+                case 'dial-by-extension':
+                    settingsHTML += `
+                        <div class="form-group"><label>Extension to Dial</label><input type="text" id="extension" value="${settings.extension || ''}" placeholder="e.g., 1234"></div>
+                        <div class="form-group"><label>Transfer Message</label><textarea id="transferMessage" rows="2" placeholder="e.g., Transferring to extension...">${settings.transferMessage || ''}</textarea></div>
+                    `;
+                    break;
+                case 'menu':
+                    settingsHTML += `
+                        <div class="form-group"><label>Menu Text</label><textarea id="menuText" rows="3" placeholder="e.g., Press 1 for sales, 2 for support...">${settings.menuText || ''}</textarea></div>
+                        <div class="form-group"><label>Menu Choices (comma-separated)</label><input type="text" id="menuChoices" value="${settings.menuChoices || ''}" placeholder="e.g., 1,2,3"></div>`;
+                    break;
+                case 'jump-menu':
+                    settingsHTML += `
+                        <div class="form-group"><label>Target Menu ID</label><input type="text" id="targetMenuId" value="${settings.targetMenuId || ''}" placeholder="e.g., sales-menu"></div>
+                        <div class="form-group"><label>Confirmation Message</label><textarea id="jumpConfirmation" rows="2" placeholder="e.g., Jumping to sales menu.">${settings.jumpConfirmation || ''}</textarea></div>
+                        `;
+                    break;
+                case 'previous-menu':
+                case 'repeat-menu':
+                    settingsHTML += `<p>This node has no specific settings.</p>`;
+                    break;
+                case 'play-audio':
+                    settingsHTML += `<div class="form-group"><label>Audio Content (TTS)</label><textarea id="audioContent" rows="3" placeholder="e.g., Your call is important to us.">${settings.audioContent || ''}</textarea></div>`;
+                    break;
+                case 'task':
+                    settingsHTML += `<div class="form-group"><label>Task Name</label><input type="text" id="taskName" value="${settings.taskName || ''}" placeholder="e.g., Customer Verification"></div>`;
+                    break;
+                case 'jump-reusable-task':
+                    settingsHTML += `<div class="form-group"><label>Reusable Task ID</label><input type="text" id="reusableTaskId" value="${settings.reusableTaskId || ''}" placeholder="e.g., payment-process-task"></div>`;
+                    break;
+                case 'set-whisper-audio':
+                    settingsHTML += `<div class="form-group"><label>Whisper Audio Content</label><textarea id="whisperAudioContent" rows="3" placeholder="e.g., Transferring to sales queue.">${settings.whisperAudioContent || ''}</textarea></div>`;
+                    break;
+                case 'call-data-action':
+                    settingsHTML += `<div class="form-group"><label>Data Action Name</label><input type="text" id="dataActionName" value="${settings.dataActionName || ''}" placeholder="e.g., GetCustomerInfo"></div>`;
+                    break;
+                case 'call-bridge-action':
+                    settingsHTML += `<div class="form-group"><label>Bridge Action Name</label><input type="text" id="bridgeActionName" value="${settings.bridgeActionName || ''}" placeholder="e.g., GetCRMContact"></div>`;
+                    break;
+                case 'call-lex-bot':
+                    settingsHTML += `<div class="form-group"><label>Lex Bot Name</label><input type="text" id="lexBotName" value="${settings.lexBotName || ''}" placeholder="e.g., OrderStatusBot"></div>`;
+                    break;
+                case 'collect-input':
+                    settingsHTML += `
+                        <div class="form-group"><label>Prompt (TTS)</label><textarea id="prompt" rows="2" placeholder="e.g., Please enter your account number.">${settings.prompt || ''}</textarea></div>
+                        <div class="form-group"><label>Digit Count</label><input type="number" id="digitCount" value="${settings.digitCount || 1}" placeholder="e.g., 6"></div>
+                        <div class="form-group"><label>Timeout (seconds)</label><input type="number" id="timeout" value="${settings.timeout || 5}" placeholder="e.g., 5"></div>
+                    `;
+                    break;
+                case 'data-table-lookup':
+                    settingsHTML += `<div class="form-group"><label>Data Table Name</label><input type="text" id="dataTableName" value="${settings.dataTableName || ''}" placeholder="e.g., ProductDetails"></div>`;
+                    break;
+                case 'get-participant-data':
+                    settingsHTML += `<div class="form-group"><label>Participant Data Key</label><input type="text" id="participantDataKey" value="${settings.participantDataKey || ''}" placeholder="e.g., customerId"></div>`;
+                    break;
+                case 'set-participant-data':
+                    settingsHTML += `
+                        <div class="form-group"><label>Participant Data Key</label><input type="text" id="setParticipantDataKey" value="${settings.setParticipantDataKey || ''}" placeholder="e.g., preferredAgent"></div>
+                        <div class="form-group"><label>Participant Data Value</label><input type="text" id="setParticipantDataValue" value="${settings.setParticipantDataValue || ''}" placeholder="e.g., John Doe"></div>
+                    `;
+                    break;
+                case 'set-uui-data':
+                    settingsHTML += `<div class="form-group"><label>UUI Data</label><input type="text" id="uuiData" value="${settings.uuiData || ''}" placeholder="e.g., customerType:premium"></div>`;
+                    break;
+                case 'update-data':
+                    settingsHTML += `
+                        <div class="form-group"><label>Variable Name</label><input type="text" id="variableName" value="${settings.variableName || ''}" placeholder="e.g., callCount"></div>
+                        <div class="form-group"><label>New Value</label><input type="text" id="newValue" value="${settings.newValue || ''}" placeholder="e.g., callCount + 1"></div>
+                    `;
+                    break;
+                case 'transfer-acd':
+                    settingsHTML += `
+                        <div class="form-group"><label>Queue Name</label><select id="queueName">
+                            <option value="sales" ${settings.queueName === 'sales' ? 'selected' : ''}>Sales</option>
+                            <option value="support" ${settings.queueName === 'support' ? 'selected' : ''}>Support</option>
+                        </select></div>
+                        <div class="form-group"><label>Transfer Message</label><textarea id="transferMessage" rows="2" placeholder="e.g., Transferring your call to sales...">${settings.transferMessage || ''}</textarea></div>
+                        `;
+                    break;
+                case 'transfer-user':
+                    settingsHTML += `
+                        <div class="form-group"><label>User ID or Name</label><input type="text" id="transferUserId" value="${settings.transferUserId || ''}" placeholder="e.g., john.doe"></div>
+                        <div class="form-group"><label>Transfer Message</label><textarea id="transferMessage" rows="2" placeholder="e.g., Transferring to the agent...">${settings.transferMessage || ''}</textarea></div>
+                        `;
+                    break;
+                case 'transfer-number':
+                    settingsHTML += `
+                        <div class="form-group"><label>Phone Number</label><input type="text" id="phoneNumber" value="${settings.phoneNumber || ''}" placeholder="e.g., +15551234567"></div>
+                        <div class="form-group"><label>Transfer Message</label><textarea id="transferMessage" rows="2" placeholder="e.g., Transferring to an external number...">${settings.transferMessage || ''}</textarea></div>
+                        `;
+                    break;
+                case 'transfer-group':
+                    settingsHTML += `
+                        <div class="form-group"><label>Group Name or ID</label><input type="text" id="groupName" value="${settings.groupName || ''}" placeholder="e.g., Supervisors"></div>
+                        <div class="form-group"><label>Transfer Message</label><textarea id="transferMessage" rows="2" placeholder="e.g., Transferring to the group...">${settings.transferMessage || ''}</textarea></div>
+                    `;
+                    break;
+                case 'transfer-flow':
+                    settingsHTML += `
+                        <div class="form-group"><label>Target Flow Name or ID</label><input type="text" id="targetFlowId" value="${settings.targetFlowId || ''}" placeholder="e.g., AfterHoursFlow"></div>
+                        <div class="form-group"><label>Transfer Message</label><textarea id="transferMessage" rows="2" placeholder="e.g., Transferring to another flow...">${settings.transferMessage || ''}</textarea></div>
+                    `;
+                    break;
+                case 'transfer-secure-flow':
+                    settingsHTML += `
+                        <div class="form-group"><label>Secure Flow Name or ID</label><input type="text" id="secureFlowId" value="${settings.secureFlowId || ''}" placeholder="e.g., PCIComplianceFlow"></div>
+                        <div class="form-group"><label>Transfer Message</label><textarea id="transferMessage" rows="2" placeholder="e.g., Transferring to secure flow...">${settings.transferMessage || ''}</textarea></div>
+                    `;
+                    break;
+                case 'transfer-voicemail':
+                    settingsHTML += `
+                        <div class="form-group"><label>User ID for Voicemail</label><input type="text" id="voicemailUserId" value="${settings.voicemailUserId || ''}" placeholder="e.g., jane.smith"></div>
+                        <div class="form-group"><label>Voicemail Message</label><textarea id="voicemailMessage" rows="2" placeholder="e.g., Please leave a message after the tone.">${settings.voicemailMessage || ''}</textarea></div>
+                        `;
+                    break;
+                case 'find-queue':
+                    settingsHTML += `<div class="form-group"><label>Queue Name to Find</label><input type="text" id="findQueueName" value="${settings.findQueueName || ''}" placeholder="e.g., PremiumSupport"></div>`;
+                    break;
+                case 'find-system-prompt':
+                    settingsHTML += `<div class="form-group"><label>System Prompt Name</label><input type="text" id="systemPromptName" value="${settings.systemPromptName || ''}" placeholder="e.g., MainMenuPrompt"></div>`;
+                    break;
+                case 'find-user-prompt':
+                    settingsHTML += `<div class="form-group"><label>User Prompt Name</label><input type="text" id="userPromptName" value="${settings.userPromptName || ''}" placeholder="e.g., AgentGreeting"></div>`;
+                    break;
+                case 'find-user-by-id':
+                    settingsHTML += `<div class="form-group"><label>User ID</label><input type="text" id="findUserId" value="${settings.findUserId || ''}" placeholder="e.g., agent123"></div>`;
+                    break;
+                case 'find-users-by-id':
+                    settingsHTML += `<div class="form-group"><label>User IDs (comma-separated)</label><input type="text" id="findUsersIds" value="${settings.findUsersIds || ''}" placeholder="e.g., agent1,agent2"></div>`;
+                    break;
+                case 'create-callback':
+                    settingsHTML += `
+                        <div class="form-group"><label>Callback Queue</label><input type="text" id="callbackQueue" value="${settings.callbackQueue || ''}" placeholder="e.g., CallbackQueue"></div>
+                        <div class="form-group"><label>Phone Number</label><input type="text" id="callbackPhoneNumber" value="${settings.callbackPhoneNumber || ''}" placeholder="e.g., +15551234567"></div>
+                    `;
+                    break;
+                case 'enable-participant-recording':
+                    settingsHTML += `
+                        <div class="form-group"><label>Recording Enabled</label>
+                            <select id="recordingEnabled">
+                                <option value="true" ${settings.recordingEnabled === true ? 'selected' : ''}>True</option>
+                                <option value="false" ${settings.recordingEnabled === false ? 'selected' : ''}>False</option>
+                            </select>
+                        </div>
+                    `;
+                    break;
+                case 'initialize-flow-outcome':
+                    settingsHTML += `<div class="form-group"><label>Flow Outcome Name</label><input type="text" id="flowOutcomeName" value="${settings.flowOutcomeName || ''}" placeholder="e.g., Success"></div>`;
+                    break;
+                case 'set-flow-outcome':
+                    settingsHTML += `<div class="form-group"><label>Flow Outcome Value</label><input type="text" id="flowOutcomeValue" value="${settings.flowOutcomeValue || ''}" placeholder="e.g., Completed"></div>`;
+                    break;
+                case 'set-language':
+                    settingsHTML += `
+                        <div class="form-group"><label>Language Code</label>
+                            <select id="languageCode">
+                                ${supportedLanguages.map(lang => `<option value="${lang.code}" ${settings.languageCode === lang.code ? 'selected' : ''}>${lang.name} (${lang.code})</option>`).join('')}
+                            </select>
+                        </div>
+                    `;
+                    break;
+                case 'set-screen-pop':
+                    settingsHTML += `<div class="form-group"><label>Script Name</label><input type="text" id="scriptName" value="${settings.scriptName || ''}" placeholder="e.g., CustomerLookupScript"></div>`;
+                    break;
+                case 'set-wrapup-code':
+                    settingsHTML += `<div class="form-group"><label>Wrap-up Code</label><input type="text" id="wrapupCode" value="${settings.wrapupCode || ''}" placeholder="e.g., Sale_Completed"></div>`;
+                    break;
+                case 'condition':
+                    settingsHTML += `
+                        <div class="form-group">
+                            <label>Variable to Check</label>
+                            <input type="text" id="variableToCheck" value="${settings.variableToCheck || 'dtmfInput'}" placeholder="e.g., dtmfInput or language">
+                        </div>
+                        <label>Branches:</label>
+                        <div id="conditionBranches"></div>
+                        <button type="button" class="btn add-branch-btn" onclick="addConditionBranch()">+ Add Branch</button>
+                    `;
+                    break;
+                case 'evaluate-schedule':
+                    settingsHTML += `<div class="form-group"><label>Schedule Name</label><input type="text" id="scheduleName" value="${settings.scheduleName || ''}" placeholder="e.g., BusinessHours"></div>`;
+                    break;
+                case 'evaluate-schedule-group':
+                    settingsHTML += `<div class="form-group"><label>Schedule Group Name</label><input type="text" id="scheduleGroupName" value="${settings.scheduleGroupName || ''}" placeholder="e.g., HolidaySchedules"></div>`;
+                    break;
+                case 'switch':
+                    settingsHTML += `
+                        <div class="form-group">
+                            <label>Expression to Evaluate</label>
+                            <input type="text" id="switchExpression" value="${settings.switchExpression || 'inputDigit'}" placeholder="e.g., inputDigit or flow.language">
+                        </div>
+                        <label>Cases:</label>
+                        <div id="switchCases"></div>
+                        <button type="button" class="btn add-branch-btn" onclick="addSwitchCase()">+ Add Case</button>
+                    `;
+                    break;
+                case 'loop':
+                    settingsHTML += `<div class="form-group"><label>Loop Name</label><input type="text" id="loopName" value="${settings.loopName || ''}" placeholder="e.g., RetryLoop"></div>`;
+                    settingsHTML += `<div class="form-group"><label>Max Iterations</label><input type="number" id="maxIterations" value="${settings.maxIterations || 3}" placeholder="e.g., 3"></div>`;
+                    break;
+                case 'next-loop':
+                    settingsHTML += `<p>This action moves to the next iteration of the current loop.</p>`;
+                    break;
+                case 'exit-loop':
+                    settingsHTML += `<p>This action exits the current loop.</p>`;
+                    break;
+                case 'disconnect':
+                    settingsHTML += `<div class="form-group"><label>Goodbye Message</label><textarea id="goodbyeMessage" rows="2" placeholder="e.g., Thank you for calling, goodbye.">${settings.goodbyeMessage || ''}</textarea></div>`;
+                    break;
+                default:
+                     settingsHTML += `<p>This node has no specific settings.</p>`;
+            }
+            settingsHTML += `<button class="btn" onclick="saveNodeSettings()">Save</button>`;
+            // The starting menu node cannot be deleted, so we only show the delete button for other nodes.
+            if (action !== 'starting-menu') {
+                settingsHTML += `<button class="btn btn-secondary" onclick="deleteNode()">Delete</button>`;
+            }
+            settingsDiv.innerHTML = settingsHTML;
+
+            if (action === 'condition') {
+                renderConditionBranches(settings.branches || [], allNodesForDropdown);
+            } else if (action === 'switch') {
+                renderSwitchCases(settings.branches || [], allNodesForDropdown);
+            }
+        }
+
+        function renderConditionBranches(branches, allNodesForDropdown) {
+            const conditionBranchesDiv = document.getElementById('conditionBranches');
+            conditionBranchesDiv.innerHTML = '';
+            branches.forEach((branch, index) => {
+                const branchDiv = document.createElement('div');
+                branchDiv.className = 'condition-branch-item';
+                branchDiv.innerHTML = `
+                    <input type="text" placeholder="Value (e.g., 1 or English)" value="${branch.value || ''}" onchange="updateConditionBranch(${index}, 'value', this.value)">
+                    <select onchange="updateConditionBranch(${index}, 'targetNodeId', this.value)">
+                        <option value="">Select Destination</option>
+                        ${allNodesForDropdown.map(n => `<option value="${n.id}" ${branch.targetNodeId === n.id ? 'selected' : ''}>${n.displayName}</option>`).join('')}
+                    </select>
+                    <button type="button" onclick="removeConditionBranch(${index})">-</button>
+                `;
+                conditionBranchesDiv.appendChild(branchDiv);
+            });
+        }
+
+        function addConditionBranch() {
+            const nodeData = flowData[currentFlow].nodes.find(n => n.id === selectedNode.id);
+            if (!nodeData.settings.branches) {
+                nodeData.settings.branches = [];
+            }
+            nodeData.settings.branches.push({ value: '', targetNodeId: '' });
+            updateNodeSettingsUI(selectedNode.dataset.action, selectedNode);
+        }
+
+        function removeConditionBranch(index) {
+            const nodeData = flowData[currentFlow].nodes.find(n => n.id === selectedNode.id);
+            nodeData.settings.branches.splice(index, 1);
+            updateNodeSettingsUI(selectedNode.dataset.action, selectedNode);
+        }
+
+        function updateConditionBranch(index, key, value) {
+            const nodeData = flowData[currentFlow].nodes.find(n => n.id === selectedNode.id);
+            if (nodeData.settings.branches[index]) {
+                nodeData.settings.branches[index][key] = value;
+            }
+        }
+
+        function renderSwitchCases(cases, allNodesForDropdown) {
+            const switchCasesDiv = document.getElementById('switchCases');
+            switchCasesDiv.innerHTML = '';
+            cases.forEach((caseItem, index) => {
+                const caseDiv = document.createElement('div');
+                caseDiv.className = 'condition-branch-item'; // Re-using style for simplicity
+                caseDiv.innerHTML = `
+                    <input type="text" placeholder="Case Value (e.g., 1 or 'English')" value="${caseItem.value || ''}" onchange="updateSwitchCase(${index}, 'value', this.value)">
+                    <select onchange="updateSwitchCase(${index}, 'targetNodeId', this.value)">
+                        <option value="">Select Destination</option>
+                        ${allNodesForDropdown.map(n => `<option value="${n.id}" ${caseItem.targetNodeId === n.id ? 'selected' : ''}>${n.displayName}</option>`).join('')}
+                    </select>
+                    <button type="button" onclick="removeSwitchCase(${index})">-</button>
+                `;
+                switchCasesDiv.appendChild(caseDiv);
+            });
+        }
+
+        function addSwitchCase() {
+            const nodeData = flowData[currentFlow].nodes.find(n => n.id === selectedNode.id);
+            if (!nodeData.settings.branches) { // Re-using 'branches' for switch cases too
+                nodeData.settings.branches = [];
+            }
+            nodeData.settings.branches.push({ value: '', targetNodeId: '' });
+            updateNodeSettingsUI(selectedNode.dataset.action, selectedNode);
+        }
+
+        function removeSwitchCase(index) {
+            const nodeData = flowData[currentFlow].nodes.find(n => n.id === selectedNode.id);
+            nodeData.settings.branches.splice(index, 1);
+            updateNodeSettingsUI(selectedNode.dataset.action, selectedNode);
+        }
+
+        function updateSwitchCase(index, key, value) {
+            const nodeData = flowData[currentFlow].nodes.find(n => n.id === selectedNode.id);
+            if (nodeData.settings.branches[index]) {
+                nodeData.settings.branches[index][key] = value;
+            }
+        }
+
+
+        function saveNodeSettings() {
+            if (!selectedNode) return;
+            const action = selectedNode.dataset.action;
+            const nodeId = selectedNode.id;
+            const nodeIndex = flowData[currentFlow].nodes.findIndex(n => n.id === nodeId);
+            if (nodeIndex === -1) return;
+
+            const settings = {};
+            document.querySelectorAll('#nodeSettings input, #nodeSettings select, #nodeSettings textarea').forEach(el => {
+                if (el.id === 'variableToCheck' || el.id === 'switchExpression') {
+                    settings[el.id] = el.value;
+                } else if (el.id === 'recordingEnabled') {
+                    settings[el.id] = el.value === 'true'; // Store as boolean
+                } else if (el.type === 'number') {
+                    settings[el.id] = parseFloat(el.value);
+                }
+                 else if (el.id) {
+                    settings[el.id] = el.value;
+                }
+            });
+            
+            flowData[currentFlow].nodes[nodeIndex].settings = settings;
+
+            let description = 'Configured';
+            if (action === 'starting-menu') {
+                description = `Flow: ${settings.flowName || 'Unnamed'} - ${settings.initialGreeting?.substring(0, 20)}...`;
+            } else if (action === 'menu') description = settings.menuText?.substring(0, 30) + '...' || 'Menu';
+            else if (action === 'transfer-acd') description = `To ${settings.queueName} queue`;
+            else if (action === 'play-audio') description = `Audio: ${settings.audioContent?.substring(0, 30)}...`;
+            else if (action === 'disconnect') description = `Goodbye: ${settings.goodbyeMessage?.substring(0, 30)}...`;
+            else if (action === 'condition') {
+                description = `Check ${settings.variableToCheck}`;
+                if (settings.branches && settings.branches.length > 0) {
+                    description += ` (${settings.branches.length} branches)`;
+                }
+            } else if (action === 'switch') {
+                description = `Switch on ${settings.switchExpression}`;
+                if (settings.branches && settings.branches.length > 0) {
+                    description += ` (${settings.branches.length} cases)`;
+                }
+            } else if (action === 'collect-input') {
+                description = `Collect ${settings.digitCount} digits`;
+            } else if (action === 'set-language') {
+                const lang = supportedLanguages.find(l => l.code === settings.languageCode);
+                description = `Set Language: ${lang ? lang.name : settings.languageCode}`;
+            } else if (action === 'dial-by-extension') {
+                description = `Dial Ext: ${settings.extension}`;
+            } else if (action === 'set-whisper-audio') {
+                description = `Whisper: ${settings.whisperAudioContent?.substring(0, 30)}...`;
+            } else if (action === 'call-data-action') {
+                description = `Call Data: ${settings.dataActionName}`;
+            } else if (action === 'transfer-group') {
+                description = `Transfer to Group: ${settings.groupName}`;
+            } else if (action === 'transfer-flow') {
+                description = `Transfer to Flow: ${settings.targetFlowId}`;
+            } else if (action === 'transfer-secure-flow') {
+                description = `Transfer to Secure Flow: ${settings.secureFlowId}`;
+            } else if (action === 'loop') {
+                description = `Loop: ${settings.loopName}`;
+            }
+            
+            flowData[currentFlow].nodes[nodeIndex].description = description;
+            selectedNode.querySelector('p').textContent = description;
+            showNotification('Node settings saved!');
+        }
+
+        function deleteNode() {
+            if (!selectedNode || selectedNode.id === 'startingMenu') return; // Prevent deleting starting menu
+            const nodeId = selectedNode.id;
+            selectedNode.remove();
+            flowData[currentFlow].nodes = flowData[currentFlow].nodes.filter(n => n.id !== nodeId);
+            flowData[currentFlow].connections = flowData[currentFlow].connections.filter(c => c.source !== nodeId && c.target !== nodeId);
+            redrawAllConnections();
+            document.getElementById('nodeSettings').innerHTML = '<p>Select a node to configure its settings</p>';
+            selectedNode = null;
+            showNotification('Node deleted.');
+        }
+
+        // Drag functionality for nodes
+        let draggedNode = null;
+        let dragOffset = { x: 0, y: 0 };
+
+        function startDrag(e) {
+            if (e.target.classList.contains('connection-handle') || connectingNode) return;
+            draggedNode = e.target.closest('.flow-node');
+            if (!draggedNode) return;
+            const rect = draggedNode.getBoundingClientRect();
+            dragOffset.x = e.clientX - rect.left;
+            dragOffset.y = e.clientY - rect.top;
+            document.addEventListener('mousemove', dragMove);
+            document.addEventListener('mouseup', stopDrag, { once: true });
+            e.preventDefault();
+        }
+
+        function dragMove(e) {
+            if (!draggedNode) return;
+            const builderRect = document.getElementById('flowBuilder').getBoundingClientRect();
+            const x = e.clientX - builderRect.left - dragOffset.x;
+            const y = e.clientY - builderRect.top - dragOffset.y;
+            draggedNode.style.left = `${Math.max(0, Math.min(x, builderRect.width - draggedNode.offsetWidth))}px`;
+            draggedNode.style.top = `${Math.max(0, Math.min(y, builderRect.height - draggedNode.offsetHeight))}px`;
+            redrawAllConnections();
+        }
+
+        function stopDrag() {
+            if (draggedNode) {
+                const nodeId = draggedNode.id;
+                // Only update position in flowData if it's not the starting menu or if it's dynamic
+                if (nodeId !== 'startingMenu') { 
+                    const nodeIndex = flowData[currentFlow].nodes.findIndex(n => n.id === nodeId);
+                    if (nodeIndex !== -1) {
+                        flowData[currentFlow].nodes[nodeIndex].x = parseInt(draggedNode.style.left);
+                        flowData[currentFlow].nodes[nodeIndex].y = parseInt(draggedNode.style.top);
+                    }
+                }
+            }
+            document.removeEventListener('mousemove', dragMove);
+            draggedNode = null;
+        }
+
+        // --- UPDATED CONNECTION LOGIC ---
+        function cleanupConnection(showCancelMessage = false) {
+            document.getElementById('tempConnectionLine')?.remove();
+            document.body.classList.remove('unselectable');
+            document.removeEventListener('mousemove', drawTemporaryConnection);
+            document.removeEventListener('mouseup', cancelConnection); // Remove the specific listener
+            connectingNode = null;
+            if (showCancelMessage) {
+                showNotification('Connection cancelled.', 'info');
+            }
+        }
+        
+        function cancelConnection() {
+            cleanupConnection(true);
+        }
+
+        function startConnecting(e, nodeId) {
+            e.stopPropagation();
+            connectingNode = nodeId;
+            document.body.classList.add('unselectable');
+            
+            const svg = document.getElementById('flowConnections');
+            const tempLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            tempLine.setAttribute('id', 'tempConnectionLine');
+            tempLine.setAttribute('stroke', '#ff6b35');
+            tempLine.setAttribute('stroke-width', '2');
+            tempLine.setAttribute('stroke-dasharray', '5,5');
+            svg.appendChild(tempLine);
+
+            document.addEventListener('mousemove', drawTemporaryConnection);
+            document.addEventListener('mouseup', cancelConnection, { once: true });
+        }
+
+        function drawTemporaryConnection(e) {
+            e.preventDefault();
+            if (!connectingNode) return;
+            const sourceNode = document.getElementById(connectingNode);
+            if (!sourceNode) return;
+            const builderRect = document.getElementById('flowBuilder').getBoundingClientRect();
+            const x1 = sourceNode.offsetLeft + sourceNode.offsetWidth / 2;
+            const y1 = sourceNode.offsetTop + sourceNode.offsetHeight;
+            const x2 = e.clientX - builderRect.left;
+            const y2 = e.clientY - builderRect.top;
+            const tempLine = document.getElementById('tempConnectionLine');
+            if (tempLine) {
+                tempLine.setAttribute('x1', x1);
+                tempLine.setAttribute('y1', y1);
+                tempLine.setAttribute('x2', x2);
+                tempLine.setAttribute('y2', y2);
+            }
+        }
+        
+        function endConnecting(e, targetNodeId) {
+            e.stopPropagation();
+            if (connectingNode && connectingNode !== targetNodeId) {
+                // Prevent duplicate connections
+                const existingConnection = flowData[currentFlow].connections.find(
+                    c => c.source === connectingNode && c.target === targetNodeId
+                );
+                if (existingConnection) {
+                    showNotification('Connection already exists!', 'info');
+                } else {
+                    flowData[currentFlow].connections.push({ source: connectingNode, target: targetNodeId });
+                    showNotification(`Nodes connected.`);
+                }
+                redrawAllConnections();
+            } else if (connectingNode === targetNodeId) {
+                showNotification('Cannot connect a node to itself.', 'error');
+            }
+            cleanupConnection();
+        }
+
+        function redrawAllConnections() {
+            const svg = document.getElementById('flowConnections');
+            svg.innerHTML = '';
+            flowData[currentFlow].connections.forEach(conn => {
+                const sourceNode = document.getElementById(conn.source);
+                const targetNode = document.getElementById(conn.target);
+                if (!sourceNode || !targetNode) return;
+
+                const x1 = sourceNode.offsetLeft + sourceNode.offsetWidth / 2;
+                const y1 = sourceNode.offsetTop + sourceNode.offsetHeight;
+                const x2 = targetNode.offsetLeft + targetNode.offsetWidth / 2;
+                const y2 = targetNode.offsetTop;
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1); line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2); line.setAttribute('y2', y2);
+                line.setAttribute('class', 'connection-line');
+                line.dataset.source = conn.source; line.dataset.target = conn.target;
+                line.addEventListener('contextmenu', e => showConnectionContextMenu(e, line));
+                svg.appendChild(line);
+            });
+        }
+
+        // Context Menu
+        function showConnectionContextMenu(e, lineElement) {
+            e.preventDefault();
+            hideConnectionContextMenu();
+            activeConnectionLine = lineElement;
+            const menu = document.getElementById('connectionContextMenu');
+            menu.style.display = 'block';
+            const mainRect = document.querySelector('.main-content').getBoundingClientRect();
+            menu.style.left = `${e.clientX - mainRect.left}px`;
+            menu.style.top = `${e.clientY - mainRect.top}px`;
+            document.addEventListener('click', hideConnectionContextMenu, { once: true });
+        }
+
+        function hideConnectionContextMenu() {
+            document.getElementById('connectionContextMenu').style.display = 'none';
+        }
+
+        function disconnectSelectedLine() {
+            if (!activeConnectionLine) return;
+            const sourceId = activeConnectionLine.dataset.source;
+            const targetId = activeConnectionLine.dataset.target;
+            const index = flowData[currentFlow].connections.findIndex(c => c.source === sourceId && c.target === targetId);
+            if(index > -1) flowData[currentFlow].connections.splice(index, 1);
+            redrawAllConnections();
+            showNotification(`Connection disconnected.`);
+        }
+
+        // Utility & Notification
+        function showNotification(message, type = 'success') {
+            const el = document.getElementById('notification');
+            el.textContent = message;
+            el.className = `notification show ${type === 'error' ? 'error' : type === 'info' ? 'info' : 'success'}`;
+            setTimeout(() => el.classList.remove('show'), 3000);
+        }
+
+        function speak(text) {
+            return new Promise(resolve => {
+                if ('speechSynthesis' in window) {
+                    window.speechSynthesis.cancel();
+                    const utt = new SpeechSynthesisUtterance(text);
+                    utt.onend = resolve;
+                    utt.onerror = () => resolve();
+                    // Optional: Set voice based on default language settings
+                    const defaultLang = supportedLanguages.find(lang => lang.default);
+                    if (defaultLang) {
+                        utt.lang = defaultLang.code; // Set language for default voice
+                        if (defaultLang.voice && defaultLang.voice !== 'default') {
+                            const voice = speechSynthesis.getVoices().find(v => v.name === defaultLang.voice && v.lang.startsWith(defaultLang.code.substring(0,2)));
+                            if (voice) utt.voice = voice;
+                        }
+                    }
+                    window.speechSynthesis.speak(utt);
+                } else { resolve(); }
+            });
+        }
+
+        // Dial Pad Logic
+        let dialPadResolver = null;
+        function showDialPad() { document.getElementById('dialPad').classList.add('show'); clearDialPad(); }
+        function hideDialPad() { document.getElementById('dialPad').classList.remove('show'); clearDialPad(); }
+        function dialPadInput(char) { document.getElementById('dialPadDisplay').textContent += char; }
+        function clearDialPad() { document.getElementById('dialPadDisplay').textContent = ''; }
+        function submitDialPadInput() {
+            if (dialPadResolver) dialPadResolver(document.getElementById('dialPadDisplay').textContent);
+            dialPadResolver = null;
+            clearDialPad();
+        }
+        function waitForDialPadInput() { return new Promise(resolve => { dialPadResolver = resolve; }); }
+
+        // Test Flow Feature
+        async function testFlow() {
+            showNotification('Starting flow simulation...', 'info');
+            showDialPad();
+            let currentNodeId = 'startingMenu';
+            const loopTracker = {}; // To track loop iterations
+
+            for (let i = 0; i < 50 && currentNodeId; i++) { // Increased max iterations to 50
+                // Correctly get nodeData for startingMenu from flowData
+                const nodeData = flowData[currentFlow].nodes.find(n => n.id === currentNodeId);
+
+                if (!nodeData) {
+                    await speak("Error: Node not found in flow, ending simulation.");
+                    showNotification('Flow test ended: Node not found.', 'error');
+                    break;
+                }
+                
+                document.querySelectorAll('.flow-node.selected').forEach(n => n.classList.remove('selected'));
+                document.getElementById(nodeData.id)?.classList.add('selected');
+
+                const connections = flowData[currentFlow].connections.filter(c => c.source === currentNodeId);
+                let nextNodeId = null;
+
+                switch (nodeData.action) {
+                    case 'starting-menu':
+                        await speak(nodeData.settings.initialGreeting || 'Hello, welcome to our service.');
+                        showNotification(`Simulating flow: ${nodeData.settings.flowName || 'Unnamed Flow'}`);
+                        // You can add simulation for menuTimeout or speechRecognition here if needed
+                        if (connections.length > 0) {
+                            nextNodeId = connections[0].target;
+                        } else {
+                            showNotification('Flow test ended: Starting menu has no outgoing connection.', 'info');
+                        }
+                        break;
+                    case 'menu':
+                        await speak(nodeData.settings?.menuText || 'Please select an option.');
+                        const choice = await waitForDialPadInput();
+                        const menuChoicesArray = (nodeData.settings?.menuChoices || '').split(',').map(c => c.trim());
+                        const choiceIndex = menuChoicesArray.indexOf(choice);
+                        
+                        if (choiceIndex > -1) { // Choice is valid
+                            if (connections[choiceIndex]) { // A connection exists for this choice's index
+                                nextNodeId = connections[choiceIndex].target;
+                            } else {
+                                await speak(`No path configured for choice "${choice}". Repeating menu.`);
+                                nextNodeId = currentNodeId; // Loop back
+                            }
+                        } else { // Choice is invalid (not in menuChoicesArray)
+                            await speak(`Invalid choice "${choice}". Repeating menu.`);
+                            nextNodeId = currentNodeId; // Loop back
+                        }
+                        break;
+                    case 'play-audio':
+                        await speak(nodeData.settings?.audioContent || '');
+                        if (connections.length > 0) {
+                            nextNodeId = connections[0].target;
+                        } else {
+                            showNotification('Flow test ended: Play Audio node has no outgoing connection.', 'info');
+                        }
+                        break;
+                    // --- New Action Simulations ---
+                    case 'dial-by-extension':
+                        await speak(`Dialing extension: ${nodeData.settings?.extension || 'unknown'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'task':
+                        await speak(`Performing task: ${nodeData.settings?.taskName || 'unnamed task'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'jump-reusable-task':
+                        await speak(`Jumping to reusable task: ${nodeData.settings?.reusableTaskId || 'unnamed reusable task'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'set-whisper-audio':
+                        await speak(`Setting whisper audio: "${nodeData.settings?.whisperAudioContent || 'empty'}".`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'call-data-action':
+                        await speak(`Calling data action: ${nodeData.settings?.dataActionName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'call-bridge-action':
+                        await speak(`Calling bridge action: ${nodeData.settings?.bridgeActionName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'call-lex-bot':
+                        await speak(`Calling Lex Bot: ${nodeData.settings?.lexBotName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'collect-input':
+                        await speak(nodeData.settings?.prompt || 'Please enter your input.');
+                        const collectedInput = await waitForDialPadInput();
+                        await speak(`Collected input: ${collectedInput}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'data-table-lookup':
+                        await speak(`Performing data table lookup on: ${nodeData.settings?.dataTableName || 'unnamed table'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'get-participant-data':
+                        await speak(`Getting participant data for key: ${nodeData.settings?.participantDataKey || 'unknown'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'set-participant-data':
+                        await speak(`Setting participant data "${nodeData.settings?.setParticipantDataKey || 'unknown'}" to "${nodeData.settings?.setParticipantDataValue || 'empty'}".`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'set-uui-data':
+                        await speak(`Setting UUI data: ${nodeData.settings?.uuiData || 'empty'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'update-data':
+                        await speak(`Updating variable "${nodeData.settings?.variableName || 'unknown'}" to "${nodeData.settings?.newValue || 'empty'}".`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'transfer-group':
+                        await speak(nodeData.settings?.transferMessage || `Transferring your call to group: ${nodeData.settings?.groupName || 'unknown group'}.`);
+                        break;
+                    case 'transfer-flow':
+                        await speak(nodeData.settings?.transferMessage || `Transferring to another flow: ${nodeData.settings?.targetFlowId || 'unknown flow'}.`);
+                        break;
+                    case 'transfer-secure-flow':
+                        await speak(nodeData.settings?.transferMessage || `Transferring to secure flow: ${nodeData.settings?.secureFlowId || 'unknown secure flow'}.`);
+                        break;
+                    case 'find-queue':
+                        await speak(`Finding queue: ${nodeData.settings?.findQueueName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'find-system-prompt':
+                        await speak(`Finding system prompt: ${nodeData.settings?.systemPromptName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'find-user-prompt':
+                        await speak(`Finding user prompt: ${nodeData.settings?.userPromptName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'find-user-by-id':
+                        await speak(`Finding user by ID: ${nodeData.settings?.findUserId || 'unspecified'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'find-users-by-id':
+                        await speak(`Finding users by IDs: ${nodeData.settings?.findUsersIds || 'unspecified'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'create-callback':
+                        await speak(`Creating callback for ${nodeData.settings?.callbackPhoneNumber || 'unspecified number'} to ${nodeData.settings?.callbackQueue || 'default queue'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'enable-participant-recording':
+                        await speak(`Participant recording set to: ${nodeData.settings?.recordingEnabled ? 'enabled' : 'disabled'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'initialize-flow-outcome':
+                        await speak(`Initializing flow outcome: ${nodeData.settings?.flowOutcomeName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'set-flow-outcome':
+                        await speak(`Setting flow outcome to: ${nodeData.settings?.flowOutcomeValue || 'empty'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'set-language':
+                        const targetLang = supportedLanguages.find(l => l.code === nodeData.settings?.languageCode);
+                        await speak(`Setting language to: ${targetLang ? targetLang.name : nodeData.settings?.languageCode || 'unknown'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'set-screen-pop':
+                        await speak(`Setting screen pop for script: ${nodeData.settings?.scriptName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'set-wrapup-code':
+                        await speak(`Setting wrap-up code: ${nodeData.settings?.wrapupCode || 'unspecified'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'evaluate-schedule':
+                        await speak(`Evaluating schedule: ${nodeData.settings?.scheduleName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'evaluate-schedule-group':
+                        await speak(`Evaluating schedule group: ${nodeData.settings?.scheduleGroupName || 'unnamed'}.`);
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'switch':
+                        await speak(`Evaluating switch expression: ${nodeData.settings?.switchExpression || 'unknown'}. Please provide input.`);
+                        const switchInput = await waitForDialPadInput();
+                        let switchCaseMatched = false;
+                        if (nodeData.settings?.branches) { // Using 'branches' for switch cases
+                            for (const caseItem of nodeData.settings.branches) {
+                                if (caseItem.value.trim().toLowerCase() === switchInput.trim().toLowerCase()) {
+                                    nextNodeId = caseItem.targetNodeId;
+                                    await speak(`Switch case matched for "${caseItem.value}". Routing to selected path.`);
+                                    switchCaseMatched = true;
+                                    break;
+                                }
+                            }
+                        }
+                        if (!switchCaseMatched) {
+                            if (connections.length > 0) { // Default/Else path (first connection)
+                                nextNodeId = connections[0].target;
+                                await speak("No matching switch case. Routing to default path.");
+                            } else {
+                                await speak("No matching switch case and no default path available. Ending flow.");
+                                showNotification('Flow test ended: Switch node has no matching case and no default outgoing connection.', 'info');
+                                currentNodeId = null;
+                            }
+                        }
+                        break;
+                    case 'loop':
+                        const loopName = nodeData.settings?.loopName || nodeId;
+                        const maxIterations = nodeData.settings?.maxIterations || 3;
+                        loopTracker[loopName] = (loopTracker[loopName] || 0) + 1;
+                        if (loopTracker[loopName] <= maxIterations) {
+                            await speak(`Entering loop "${loopName}". Iteration ${loopTracker[loopName]} of ${maxIterations}.`);
+                            if (connections.length > 0) nextNodeId = connections[0].target;
+                        } else {
+                            await speak(`Max iterations reached for loop "${loopName}". Exiting loop.`);
+                            // If max iterations reached, effectively "skip" the loop content and continue to next node after loop
+                            // For simplicity, we'll just end the simulation here if no explicit exit-loop path
+                            showNotification(`Loop "${loopName}" max iterations reached.`, 'info');
+                            currentNodeId = null;
+                        }
+                        break;
+                    case 'next-loop':
+                        await speak('Continuing to the next loop iteration.');
+                        // In a real system, this would jump back to the start of the current loop, if tracked.
+                        // For simulation, we'll follow the first connection.
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+                    case 'exit-loop':
+                        await speak('Exiting current loop.');
+                        // In a real system, this would break out of the loop and jump to the node immediately after the loop.
+                        // Since this node explicitly ends a loop, it should typically not have outgoing connections in a flow designer.
+                        // If it has connections, we'll follow the first one for simulation purposes.
+                        if (connections.length > 0) nextNodeId = connections[0].target;
+                        break;
+
+                    case 'transfer-acd':
+                        await speak(nodeData.settings?.transferMessage || `Transferring your call to the ${nodeData.settings?.queueName || 'requested'} department.`);
+                        break; // End of flow for transfer
+                    case 'disconnect':
+                        await speak(nodeData.settings?.goodbyeMessage || "Thank you for calling, goodbye.");
+                        break; // End of flow for disconnect
+                    case 'jump-menu':
+                        await speak(nodeData.settings?.jumpConfirmation || `Jumping to menu ${nodeData.settings?.targetMenuId || ''}.`);
+                        if (connections.length > 0) {
+                            nextNodeId = connections[0].target;
+                        } else {
+                            showNotification('Flow test ended: Jump Menu node has no outgoing connection.', 'info');
+                        }
+                        break;
+                    case 'transfer-user':
+                        await speak(nodeData.settings?.transferMessage || `Transferring your call to user ${nodeData.settings?.transferUserId || ''}.`);
+                        break;
+                    case 'transfer-number':
+                        await speak(nodeData.settings?.transferMessage || `Transferring your call to ${nodeData.settings?.phoneNumber || 'an external number'}.`);
+                        break;
+                    case 'transfer-voicemail':
+                        await speak(nodeData.settings?.voicemailMessage || `Transferring you to voicemail for ${nodeData.settings?.voicemailUserId || ''}.`);
+                        break;
+                    case 'condition':
+                        let inputValue = '';
+                        if (nodeData.settings?.variableToCheck === 'dtmfInput') {
+                            await speak("Please enter your input for the condition.");
+                            inputValue = await waitForDialPadInput();
+                        } else {
+                            await speak(`Checking variable: ${nodeData.settings?.variableToCheck || 'unknown'}. (Simulation: assuming value '1' for demonstration)`);
+                            // For simulation, you might need to set a mock value or prompt for other variables.
+                            inputValue = '1'; // Placeholder for other variables
+                        }
+
+                        let branchMatched = false;
+                        if (nodeData.settings?.branches) {
+                            for (const branch of nodeData.settings.branches) {
+                                if (branch.value.trim().toLowerCase() === inputValue.trim().toLowerCase()) {
+                                    nextNodeId = branch.targetNodeId;
+                                    await speak(`Condition met for value "${branch.value}". Routing to selected path.`);
+                                    branchMatched = true;
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        if (!branchMatched) {
+                            if (connections.length > 0) { // If there's a default connection
+                                nextNodeId = connections[0].target; // Take the first available connection as default
+                                await speak("Condition not met. Routing to default path.");
+                            } else {
+                                await speak("Condition not met and no default path available. Ending flow.");
+                                showNotification('Flow test ended: Condition node has no matching branch and no default outgoing connection.', 'info');
+                                currentNodeId = null; // End simulation
+                            }
+                        }
+                        break;
+                    default:
+                        // For any other node types, just follow the first connection
+                        if (connections.length > 0) {
+                            nextNodeId = connections[0].target;
+                        } else {
+                            await speak("No further actions configured for this node, and no outgoing connection. Ending flow.");
+                            showNotification('Flow test ended: Node has no further actions or outgoing connections.', 'info');
+                            currentNodeId = null; // End simulation if no connections
+                        }
+                        break;
+                }
+                // Break loop if flow should terminate (transfer/disconnect) or no next node is found
+                if (['transfer-acd', 'transfer-user', 'transfer-number', 'transfer-voicemail', 'disconnect', 'exit-loop'].includes(nodeData.action) || !nextNodeId) {
+                    break; 
+                }
+                currentNodeId = nextNodeId;
+            }
+            showNotification('Flow test completed.', 'info');
+            hideDialPad();
+            document.querySelectorAll('.flow-node.selected').forEach(n => n.classList.remove('selected'));
+        }
+
+        // Tidy Up Layout Function
+        function tidyLayout() {
+            const builder = document.getElementById('flowBuilder');
+            const nodes = Array.from(builder.querySelectorAll('.flow-node:not(.starting-menu)'));
+            const startingMenu = document.getElementById('startingMenu');
+
+            // Include starting menu in nodes for sorting purposes, but keep its position fixed
+            const allNodes = [startingMenu, ...nodes];
+
+            // Sort nodes primarily by y-coordinate, then by x-coordinate
+            allNodes.sort((a, b) => {
+                const aRect = a.getBoundingClientRect();
+                const bRect = b.getBoundingClientRect();
+                if (aRect.top !== bRect.top) {
+                    return aRect.top - bRect.top;
+                }
+                return aRect.left - bRect.left;
+            });
+
+            const nodeWidth = 200; // Approximate width of a node + some margin
+            const nodeHeight = 120; // Approximate height of a node + some margin
+            const paddingX = 50;
+            const paddingY = 80;
+            const startX = 50; // Initial x position
+            const startY = 50; // Initial y position
+
+            let currentX = startX;
+            let currentY = startY;
+            let rowMaxHeight = 0;
+            let nodesInCurrentRow = [];
+
+            // Position starting menu first if it's the first in sorted list
+            if (allNodes[0].id === 'startingMenu') {
+                startingMenu.style.left = `${startX}px`;
+                startingMenu.style.top = `${startY}px`;
+                currentX = startX + startingMenu.offsetWidth + paddingX;
+                rowMaxHeight = Math.max(rowMaxHeight, startingMenu.offsetHeight);
+                nodesInCurrentRow.push(startingMenu);
+                allNodes.shift(); // Remove it from the list to process
+            } else {
+                 // If starting menu is not first, place it fixed at the start
+                 startingMenu.style.left = `${startX}px`;
+                 startingMenu.style.top = `${startY}px`;
+                 currentX = startX;
+                 currentY = startY;
+                 rowMaxHeight = 0;
+                 nodesInCurrentRow = [];
+            }
+            
+
+            allNodes.forEach(node => {
+                const nodeRect = node.getBoundingClientRect();
+                const builderRect = builder.getBoundingClientRect();
+
+                // If adding this node exceeds the builder width, move to next row
+                if (currentX + nodeRect.width + paddingX > builderRect.width && nodesInCurrentRow.length > 0) {
+                    currentX = startX;
+                    currentY += rowMaxHeight + paddingY;
+                    rowMaxHeight = 0;
+                    nodesInCurrentRow = [];
+                }
+
+                node.style.left = `${currentX}px`;
+                node.style.top = `${currentY}px`;
+                
+                // Update node data in flowData
+                const nodeData = flowData[currentFlow].nodes.find(n => n.id === node.id);
+                if (nodeData) {
+                    nodeData.x = parseInt(node.style.left);
+                    nodeData.y = parseInt(node.style.top);
+                }
+
+                currentX += nodeRect.width + paddingX;
+                rowMaxHeight = Math.max(rowMaxHeight, nodeRect.height);
+                nodesInCurrentRow.push(node);
+            });
+
+            redrawAllConnections();
+            showNotification('Layout tidied up!');
+        }
+
+
+        // Modal functions for Supported Languages
+        function openLanguagesModal() {
+            renderLanguageList();
+            document.getElementById('languagesModal').style.display = 'flex';
+        }
+
+        function closeLanguagesModal() {
+            document.getElementById('languagesModal').style.display = 'none';
+        }
+
+        function renderLanguageList() {
+            const languageListDiv = document.getElementById('languageList');
+            languageListDiv.innerHTML = ''; // Clear existing list
+
+            supportedLanguages.forEach((lang, index) => {
+                const langItem = document.createElement('div');
+                langItem.className = 'language-item';
+                langItem.innerHTML = `
+                    <span>
+                        <input type="radio" name="defaultLanguage" value="${lang.code}" ${lang.default ? 'checked' : ''} onchange="setDefaultLanguage('${lang.code}')"> 
+                        ${lang.name} (${lang.code}) ${lang.default ? '(Default)' : ''}
+                    </span>
+                    <div class="voice-options">
+                        <label for="voice-${index}">Voice:</label>
+                        <select id="voice-${index}" onchange="updateLanguageVoice(${index}, this.value)">
+                            <option value="default">Default Voice</option>
+                        </select>
+                        ${!lang.default ? `<button onclick="removeLanguage(${index})" style="background:none; border:none; color:#dc3545; cursor:pointer; font-size:1.2em; margin-left: 10px;">&times;</button>` : ''}
+                    </div>
+                `;
+                languageListDiv.appendChild(langItem);
+
+                // Populate voice options (requires speech synthesis to be ready)
+                const voiceSelect = document.getElementById(`voice-${index}`);
+                populateVoiceOptions(voiceSelect, lang.code, lang.voice);
+            });
+        }
+
+        function populateVoiceOptions(selectElement, langCode, currentVoice) {
+            selectElement.innerHTML = '<option value="default">Default Voice</option>'; // Always have default
+            const voices = window.speechSynthesis.getVoices().filter(voice => voice.lang.startsWith(langCode.substring(0, 2)));
+            voices.forEach(voice => {
+                const option = document.createElement('option');
+                option.value = voice.name;
+                option.textContent = voice.name;
+                if (voice.name === currentVoice) {
+                    option.selected = true;
+                }
+                selectElement.appendChild(option);
+            });
+        }
+
+        function addLanguage() {
+            const newLangName = prompt('Enter new language name (e.g., French):');
+            if (!newLangName) return;
+            const newLangCode = prompt('Enter language code (e.g., fr-FR):');
+            if (!newLangCode) return;
+
+            // Check if language already exists
+            if (supportedLanguages.some(lang => lang.code === newLangCode)) {
+                showNotification('Language with this code already exists!', 'error');
+                return;
+            }
+
+            supportedLanguages.push({
+                name: newLangName,
+                code: newLangCode,
+                voice: 'default',
+                default: false
+            });
+            renderLanguageList();
+            showNotification(`${newLangName} added.`);
+        }
+
+        function removeLanguage(index) {
+            if (supportedLanguages[index].default) {
+                showNotification('Cannot remove default language.', 'error');
+                return;
+            }
+            if (confirm(`Are you sure you want to remove ${supportedLanguages[index].name}?`)) {
+                supportedLanguages.splice(index, 1);
+                renderLanguageList();
+                showNotification('Language removed.');
+            }
+        }
+
+        function updateLanguageVoice(index, newVoice) {
+            supportedLanguages[index].voice = newVoice;
+            showNotification(`Voice for ${supportedLanguages[index].name} updated.`);
+        }
+
+        function setDefaultLanguage(code) {
+            supportedLanguages.forEach(lang => {
+                lang.default = (lang.code === code);
+            });
+            renderLanguageList(); // Re-render to show new default status
+            showNotification(`Default language set to ${code}`);
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            const startingMenuNodeElement = document.getElementById('startingMenu');
+            // Ensure the startingMenu node has a data-action for consistency
+            if (!startingMenuNodeElement.dataset.action) {
+                startingMenuNodeElement.dataset.action = 'starting-menu';
+            }
+
+            // Initialize the startingMenu node data if it's not already there in flowData
+            // Find the 'main' flow and check if startingMenu exists
+            const mainFlowNodes = flowData.main.nodes;
+            let startingMenuNodeData = mainFlowNodes.find(n => n.id === 'startingMenu');
+
+            if (!startingMenuNodeData) {
+                // If not found, add it with default values
+                startingMenuNodeData = {
+                    id: 'startingMenu',
+                    action: 'starting-menu', // Ensure this matches the data-action
+                    x: parseInt(startingMenuNodeElement.style.left) || 50,
+                    y: parseInt(startingMenuNodeElement.style.top) || 50,
+                    description: 'Main Menu Entry Point',
+                    settings: {
+                        flowName: 'Main Menu',
+                        initialGreeting: 'Hello, welcome to our service.',
+                        menuTimeout: 10,
+                        speechRecognition: 'enabled'
+                    }
+                };
+                flowData.main.nodes.push(startingMenuNodeData);
+            }
+
+            // Add click listener to the static startingMenu node
+            startingMenuNodeElement.addEventListener('click', e => {
+                if (!e.target.classList.contains('connection-handle')) {
+                    selectNode(startingMenuNodeElement, 'starting-menu');
+                }
+            });
+
+            loadFlowData(currentFlow);
+            // Ensure voices are loaded for initial render of language modal
+            if ('speechSynthesis' in window) {
+                speechSynthesis.onvoiceschanged = () => {
+                    // This will trigger after voices are loaded
+                    // No need to call renderLanguageList here unless modal is open
+                    // Calling it directly if needed for initial display when modal opens
+                };
+            }
+        });
+    </script>
+</body>
+</html>
